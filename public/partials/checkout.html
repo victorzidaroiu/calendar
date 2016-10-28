@@ -1,0 +1,40 @@
+<div class="ui page grid">
+	<div class="row centered">
+		<h1 class="ui header">Checkout</h1>
+	</div>
+	<div class="ui six wide column centered center align"">
+	<table class="ui celled table">
+		<thead>
+		<tr>
+			<th class="center aligned">Basket</th>
+		</tr>
+		</thead>
+		<tbody>
+		<tr>
+			<td ng-if="products.basket.length !== 0">
+				<div class="catalogueList ui bulleted list">
+					<div class="item" ng-repeat="(productID, aux) in products.basket">{{products.catalogue[productID].name}}</div>
+				</div>
+			</td>
+		</tr>
+		<tr ng-if="products.basket.length === 0">
+			<td>
+				<p class='center'>There are no products in the basket.</p>
+			</td>
+		</tr>
+		</tbody>
+	</table>
+	<span class="ui buttons centered">
+		<a href='/#/' class="">
+			<button class="ui  button">Back</button>
+		</a>
+		<div class="or"></div>
+		<button ng-click="products.openAddModal()" class="ui positive button">Confirm order</button>
+	</span>
+	<div id='orderConfirmModal' class="ui modal">
+		<div class="header">Thank you for your order!</div>
+		<div class="content">
+			Your order has been sent.
+		</div>
+	</div>
+</div>

@@ -28,14 +28,14 @@ module.exports = function(grunt) {
 		},
 		uglify: {
 			options: {
-				mangle: true,
-				compress: true
+				mangle: false,
+				compress: false
 			},
 			build: {
 				src: [
-					'tmp/index_es6.js'
+					'tmp/index_es5.js'
 				],
-				dest: 'tmp/index_es6.min.js'
+				dest: 'public/app.js'
 			}
 		},
 		babel: {
@@ -45,31 +45,42 @@ module.exports = function(grunt) {
 			},
 			dist: {
 				files: {
-					"tmp/index_es6.js": "src/client/index.js"
+					"tmp/index_es5_require.js": "src/client/index.js",
+          "tmp/calendar/event-chain.js": "src/client/calendar/event-chain.js",
+          "tmp/helpers/minutes-to-time.js": "src/client/helpers/minutes-to-time.js",
+          "tmp/helpers/random-int.js": "src/client/helpers/random-int.js",
 				}
 			}
 		},
 		concat: {
 			js: {
 				src: [
-					'src/client/vendor/jquery-2.1.4.min.js',
-					'src/client/vendor/semantic.min.js',
-					'tmp/index_es6.min.js'
+					'src/vendor/jquery-2.1.4.min.js',
+					'src/vendor/semantic.min.js',
 				],
-				dest: 'public/bundle.min.js'
+				dest: 'public/vendor.bundle.min.js'
 			},
 			css: {
 				options: {
 					separator: ''
 				},
 				src: [
-					'src/client/vendor/semantic.min.css',
+					'src/vendor/semantic.min.css',
 					'tmp/index.min.css',
 					'tmp/calendar.min.css'
 				],
 				dest: 'public/bundle.min.css'
 			}
-		}
+		},
+    browserify: {
+      dist: {
+        files: {
+          "tmp/index_es5.js": "tmp/index_es5_require.js"
+        },
+        options: {
+        }
+      }
+    }
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-uglify');
@@ -77,8 +88,10 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-babel');
 	grunt.loadNpmTasks('grunt-sass');
 	grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-browserify');
 
 	require('load-grunt-tasks')(grunt);
 
-	grunt.registerTask('default', ['sass', 'babel', 'uglify', 'cssmin', 'concat']);
+	//grunt.registerTask('default', ['sass', 'babel', 'browserify', 'uglify', 'cssmin', 'concat']);
+  grunt.registerTask('default', ['sass', 'babel', 'browserify', 'uglify', 'cssmin', 'concat']);
 };

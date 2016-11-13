@@ -1,214 +1,172 @@
-let CALENDAR = function() {
-	let events = [];
-	let eventChains = [];
-	const maxEventWidth = 600;
-	const startHour = 9;
-	const totalHours = 12;
+/* global document, window, layOutDay */
+/* eslint-disable no-console */
 
-	let calendarEventsElement = document.querySelector('.calendarEvents');
-	let calendarHoursElement = document.querySelector('.calendarHours');
+import EventChain from './calendar/event-chain';
+import minutesToTime from './helpers/minutes-to-time';
+import randomInt from './helpers/random-int';
 
-	class EventChain {
+const startCalendar = () => {
+  let events = [];
+  let eventChains = [];
+  const maxEventWidth = 600;
+  const startHour = 9;
+  const totalHours = 12;
 
-		constructor(eventIndex) {
-			this.chain = [eventIndex];
+  const calendarEventsElement = document.querySelector('.calendarEvents');
+  const calendarHoursElement = document.querySelector('.calendarHours');
 
-			events.forEach((event) => {
-				if (eventIndex != event.index  && this.collidesWith(event.index))
-					this.addEvent(event.index);
-			});
-		}
+  function addEvent(eventParam) {
+    const event = eventParam;
 
-		get events() {
-			return this.chain;
-		}
+    console.log('Adding event:');
+    console.log(event);
+    console.log('------------');
 
-		print(){
-			console.log("Printing chain: ");
-			this.chain.forEach((eventIndex) => {
-				console.log(events[eventIndex]);
-			});
-			console.log('-----------------');
-		}
+    event.isDrawn = false;
+    event.width = 600;
+    event.left = 0;
+    events.push(event);
+    events[events.length - 1].index = events.length - 1;
+    event.index = events.length - 1;
 
-		addEvent(eventIndex) {
-			this.chain.push(eventIndex);
-		}
+    let foundCollision = false;
 
-		collidesWith(eventIndex) {
-			let collisionDetected = true;
+    eventChains.forEach((eventChain) => {
+      if (eventChain.collidesWith(event.index)) {
+        eventChain.addEvent(event.index);
+        foundCollision = true;
+      }
+    });
 
-			this.chain.forEach((eventIndex2) => {
-				if (!eventsCollide(events[eventIndex], events[eventIndex2]))
-					collisionDetected = false;
-			});
+    if (!foundCollision) {
+      eventChains.push(new EventChain(events, event.index));
+    }
+  }
 
-			return collisionDetected;
-		}
-	}
+  function drawEvent(event) {
+    const eventElement = document.createElement('div');
+    const eventElementText = document.createElement('div');
 
-	function layOutDay(eventArray) {
-		calendarEventsElement.innerHTML = '';
-		calendarHoursElement.innerHTML = '';
+    eventElementText.className = 'eventText';
+    eventElementText.innerHTML = event.name || 'Sample Item';
 
-		events = [];
-		eventChains = [];
+    eventElement.style.top = event.start;
+    eventElement.style.width = event.width;
+    eventElement.style.left = event.left;
+    eventElement.style.height = event.end - event.start;
 
-		eventArray.forEach(addEvent);
-		renderEvents();
-		renderHours();
-	}
+    eventElement.appendChild(eventElementText);
+    calendarEventsElement.appendChild(eventElement);
 
-	function renderHours() {
-		for (let i = 0; i <= totalHours * 2; i++) {
-			let element = document.createElement('div');
-			let time = minutesToTime(startHour * 60 + i * 30);
-			let amPm = time.hour >= startHour && time.hour < 12 ? 'AM' : 'PM';
-			element.innerHTML = `${time.hour}: ${time.minutes} ${amPm}` ;
-			if (time.minutes === '00')
-				element.className = "fullHour";
-			else
-				element.className = "halfHour";
-			calendarHoursElement.appendChild(element);
-		}
-	}
+    events[event.index].isDrawn = true;
+  }
 
-	function minutesToTime(minutes) {
-		return {
-			hour: Math.floor(minutes / 60) > 13 ? Math.floor(minutes / 60) - 12 : Math.floor(minutes / 60),
-			minutes: minutes % 60 || '00'
-		}
-	}
+  function renderHours() {
+    for (let i = 0; i <= totalHours * 2; i += 1) {
+      const element = document.createElement('div');
+      const time = minutesToTime((startHour * 60) + (i * 30));
+      const amPm = time.hour >= startHour && time.hour < 12 ? 'AM' : 'PM';
+      element.innerHTML = `${time.hour}: ${time.minutes} ${amPm}`;
+      if (time.minutes === '00') {
+        element.className = 'fullHour';
+      } else {
+        element.className = 'halfHour';
+      }
+      calendarHoursElement.appendChild(element);
+    }
+  }
 
-	function renderEvents() {
+  function canDrawEvent(start, end, drawn) {
+    let canDraw = true;
+    drawn.forEach((eventIndex) => {
+      if (end > events[eventIndex].left &&
+        start < events[eventIndex].left + events[eventIndex].width) {
+        canDraw = false;
+      }
+    });
 
-		eventChains.sort((chain1, chain2) => {
-			if (chain1.events.length > chain2.events.length)
-				return 0;
-			else if (chain1.events.length < chain2.events.length)
-				return 1;
-			return 0;
-		});
+    return canDraw;
+  }
 
-		eventChains.forEach((eventChain) => {
-			eventChain.print();
+  function renderEvents() {
+    eventChains.sort((chain1, chain2) => {
+      if (chain1.events.length > chain2.events.length) {
+        return 0;
+      } else if (chain1.events.length < chain2.events.length) {
+        return 1;
+      }
+      return 0;
+    });
 
-			let doDraw = [], drawn = [];
+    eventChains.forEach((eventChain) => {
+      eventChain.print();
 
-			let width = maxEventWidth / eventChain.events.length;
-			eventChain.events.forEach((eventIndex) => {
-				if (!events[eventIndex].isDrawn)
-					doDraw.push(eventIndex);
-				else {
-					width = events[eventIndex].width;
-					drawn.push(eventIndex);
-				}
-			});
+      const doDraw = [];
+      const drawn = [];
 
-			let positionIndex = 0;
+      let width = maxEventWidth / eventChain.events.length;
+      eventChain.events.forEach((eventIndex) => {
+        if (!events[eventIndex].isDrawn) {
+          doDraw.push(eventIndex);
+        } else {
+          width = events[eventIndex].width;
+          drawn.push(eventIndex);
+        }
+      });
 
-			doDraw.forEach((eventIndex) => {
-				let left = width * positionIndex;
-				let canDraw = canDrawEvent(left, left + width, drawn);
-				while (!canDraw){
-					positionIndex += 1;
-					left = width * positionIndex;
-					canDraw = canDrawEvent(left, left + width, drawn);
-				}
-				events[eventIndex].width = width;
-				events[eventIndex].left = width * positionIndex;
-				positionIndex += 1;
-				drawEvent(events[eventIndex]);
-			});
-		});
-	}
+      let positionIndex = 0;
 
-	function canDrawEvent(start, end, drawn) {
-		let canDraw = true;
-		drawn.forEach((eventIndex) => {
-			if (end > events[eventIndex].left && start < events[eventIndex].left + events[eventIndex].width)
-				canDraw = false;
-		});
+      doDraw.forEach((eventIndex) => {
+        let left = width * positionIndex;
+        let canDraw = canDrawEvent(left, left + width, drawn);
+        while (!canDraw) {
+          positionIndex += 1;
+          left = width * positionIndex;
+          canDraw = canDrawEvent(left, left + width, drawn);
+        }
+        events[eventIndex].width = width;
+        events[eventIndex].left = width * positionIndex;
+        positionIndex += 1;
+        drawEvent(events[eventIndex]);
+      });
+    });
+  }
 
-		return canDraw;
-	}
+  function layOutDay(eventArray) {
+    calendarEventsElement.innerHTML = '';
+    calendarHoursElement.innerHTML = '';
 
-	function addEvent(event) {
-		console.log(`Adding event:`);
-		console.log(event);
-		console.log(`------------`);
+    events = [];
+    eventChains = [];
 
-		event.isDrawn = false;
-		event.width = 600;
-		event.left = 0;
-		events.push(event);
-		events[events.length - 1].index = events.length - 1;
-		event.index = events.length - 1;
+    eventArray.forEach(addEvent);
+    renderEvents();
+    renderHours();
+  }
 
-		let foundCollision = false;
+  function generateRandomEvents(n = 5) {
+    const eventsToAdd = [];
 
-		eventChains.forEach((eventChain) => {
-			if (eventChain.collidesWith(event.index)) {
-				eventChain.addEvent(event.index);
-				foundCollision = true;
-			}
-		});
+    for (let i = 0; i < n; i += 1) {
+      const start = randomInt(0, 720 - 30);
+      const end = randomInt(start + 30, 720);
+      eventsToAdd.push({ start, end });
+    }
 
-		if (!foundCollision)
-			eventChains.push(new EventChain(event.index));
-	}
+    layOutDay(eventsToAdd);
+  }
 
-	function eventsCollide(event1, event2) {
-		return event1.end >= event2.start && event1.start <= event2.end;
-	}
-
-	function drawEvent(event) {
-		let eventElement = document.createElement('div');
-		let eventElementText = document.createElement('div');
-
-		eventElementText.className = 'eventText';
-		eventElementText.innerHTML = event.name || 'Sample Item';
-
-		eventElement.style.top = event.start;
-		eventElement.style.width = event.width;
-		eventElement.style.left = event.left;
-		eventElement.style.height = event.end - event.start;
-
-		eventElement.appendChild(eventElementText);
-		calendarEventsElement.appendChild(eventElement);
-
-		events[event.index].isDrawn = true;
-	}
-
-	function generateRandomEvents(n = 5) {
-		let eventsToAdd = [];
-
-		for (let i = 0; i < n; i++) {
-			let start = randomInt(0, 720 - 30);
-			let end = randomInt(start + 30, 720);
-			eventsToAdd.push({start: start, end: end});
-		}
-
-		layOutDay(eventsToAdd);
-	};
-
-	function randomInt(low, high) {
-		return Math.floor(Math.random() * (high - low) + low);
-	}
-
-	window.layOutDay = layOutDay;
-	window.generateRandomEvents = generateRandomEvents;
+  window.layOutDay = layOutDay;
+  window.generateRandomEvents = generateRandomEvents;
 };
 
-window.onload = function () {
-	CALENDAR();
+window.onload = () => {
+  startCalendar();
 
-	layOutDay([
-		{start: 30, end: 150},
-		{start: 540, end: 600},
-		{start: 560, end: 620},
-		{start: 610, end: 670}
-	]);
-
-	//generateRandomEvents(5);
+  layOutDay([
+    { start: 30, end: 150 },
+    { start: 540, end: 600 },
+    { start: 560, end: 620 },
+    { start: 610, end: 670 },
+  ]);
 };

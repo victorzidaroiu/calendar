@@ -1,9 +1,10 @@
-var express = require('express');
-var router = express.Router();
-var debug = require('debug')('API');
+import express from 'express';
+/* eslint-disable */
+const router = express.Router();
+/* eslint-enable */
 
-router.get('/', function (req, res, next) {
-	res.render('index');
+router.get('/', (req, res) => {
+  res.render('index');
 });
 
-module.exports = router;
+export default router;
